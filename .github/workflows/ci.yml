@@ -1,0 +1,40 @@
+---
+name: CI
+
+on: push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["2.5", "2.6", "2.7", "3.0", "3.1", "head"]
+        os: [ubuntu-latest, macos-latest]
+    name: ${{ matrix.ruby }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Install dependencies (system)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo apt-get -yqq install libphonenumber-dev
+
+      - name: Install dependencies (system)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install libphonenumber
+
+      - name: Install dependencies (ruby)
+        run: gem install bundler && bundle install --jobs 4 --retry 3
+
+      - name: Compile
+        run: bundle exec rake compile
+
+      - name: RSpec
+        run: bundle exec rspec --format RSpec::Github::Formatter --format documentation
+
+      - name: Rubocop
+        run: bundle exec rubocop --format github
