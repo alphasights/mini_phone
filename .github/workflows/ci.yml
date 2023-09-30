@@ -1,0 +1,32 @@
+---
+name: CI
+
+on: push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.0", "3.1", "3.2"]
+        os: [ubuntu-latest, macos-latest]
+    name: ${{ matrix.ruby }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Install dependencies (system)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo apt-get -yqq install libphonenumber-dev
+
+      - name: Install dependencies (system)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install libphonenumber
+
+      - name: Rake
+        run: bundle exec rake
